@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSB Watermarking Studio — Final Year Project</title>
+    <meta name="description" content="Advanced LSB steganography tool supporting image-to-image and audio-to-image watermarking with quality analysis.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ================================================================
+           DESIGN TOKENS
+        ================================================================ */
+        :root {
+            --bg-deep:      #0a0a1a;
+            --bg-card:      rgba(255,255,255,0.045);
+            --bg-card-2:    rgba(255,255,255,0.07);
+            --border:       rgba(255,255,255,0.10);
+            --border-glow:  rgba(139,92,246,0.5);
+
+            --accent-1:     #7c3aed;
+            --accent-2:     #4f46e5;
+            --accent-audio: #0ea5e9;
+            --accent-audio2:#06b6d4;
+            --green:        #10b981;
+            --red:          #ef4444;
+
+            --text-primary: #f1f5f9;
+            --text-muted:   #94a3b8;
+            --text-subtle:  #64748b;
+
+            --radius-sm:    10px;
+            --radius-md:    16px;
+            --radius-lg:    24px;
+            --radius-xl:    32px;
+
+            --shadow-card:  0 25px 60px rgba(0,0,0,0.5);
+            --shadow-glow:  0 0 40px rgba(124,58,237,0.25);
+            --transition:   0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        /* ================================================================
+           RESET & BASE
+        ================================================================ */
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated mesh background */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 10%, rgba(124,58,237,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 90%, rgba(79,70,229,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 30% at 50% 50%, rgba(14,165,233,0.08) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Floating orbs */
+        body::after {
+            content: '';
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle 300px at 10% 80%, rgba(124,58,237,0.07) 0%, transparent 70%),
+                radial-gradient(circle 200px at 90% 20%, rgba(14,165,233,0.07) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            from { opacity: 0.6; }
+            to   { opacity: 1; }
+        }
+
+        /* ================================================================
+           LAYOUT
+        ================================================================ */
+        .page-wrap {
+            position: relative; z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px 80px;
+        }
+
+        /* ================================================================
+           HEADER
+        ================================================================ */
+        .hero {
+            text-align: center;
+            padding: 60px 0 50px;
+            animation: fadeDown 0.7s ease both;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(124,58,237,0.15);
+            border: 1px solid rgba(124,58,237,0.3);
+            border-radius: 100px;
+            padding: 6px 18px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #a78bfa;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.6rem);
+            font-weight: 800;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #e2d9f3 0%, #a78bfa 40%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1.5px;
+            margin-bottom: 16px;
+        }
+
+        .hero p {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            max-width: 560px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ================================================================
+           TAB NAV
+        ================================================================ */
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 6px;
+            margin-bottom: 36px;
+            animation: fadeUp 0.7s 0.1s ease both;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 24px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-md);
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active-img {
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            color: white;
+            box-shadow: 0 4px 24px rgba(124,58,237,0.4);
+        }
+
+        .tab-btn.active-audio {
+            background: linear-gradient(135deg, var(--accent-audio), var(--accent-audio2));
+            color: white;
+            box-shadow: 0 4px 24px rgba(14,165,233,0.4);
+        }
+
+        .tab-icon { font-size: 1.15rem; }
+
+        /* ================================================================
+           TAB PANELS
+        ================================================================ */
+        .tab-panel { display: none; animation: fadeUp 0.45s ease both; }
+        .tab-panel.visible { display: block; }
+
+        /* ================================================================
+           CARDS
+        ================================================================ */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 40px;
+            margin-bottom: 28px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: var(--shadow-card);
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .card:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-card), var(--shadow-glow);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-title-icon {
+            width: 40px; height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .icon-purple { background: rgba(124,58,237,0.2); }
+        .icon-blue   { background: rgba(14,165,233,0.2); }
+        .icon-green  { background: rgba(16,185,129,0.2); }
+
+        /* ================================================================
+           FORM ELEMENTS
+        ================================================================ */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media(max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+
+        .form-group { display: flex; flex-direction: column; gap: 10px; }
+
+        .form-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        /* Drop zone */
+        .drop-zone {
+            position: relative;
+            border: 2px dashed rgba(255,255,255,0.12);
+            border-radius: var(--radius-md);
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: rgba(255,255,255,0.02);
+            overflow: hidden;
+        }
+
+        .drop-zone::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(124,58,237,0.05), rgba(79,70,229,0.05));
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: var(--accent-1);
+            background: rgba(124,58,237,0.06);
+        }
+
+        .drop-zone:hover::before, .drop-zone.drag-over::before { opacity: 1; }
+
+        .drop-zone input[type="file"] {
+            position: absolute; inset: 0;
+            opacity: 0; cursor: pointer; width: 100%; height: 100%;
+        }
+
+        .drop-zone-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
+
+        .drop-zone-text {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .drop-zone-text strong {
+            color: var(--text-primary);
+            display: block;
+            font-size: 0.92rem;
+        }
+
+        .drop-zone.selected { border-color: var(--green); }
+        .drop-zone.selected::before {
+            background: rgba(16,185,129,0.06);
+            opacity: 1;
+        }
+
+        .drop-zone-filename {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--green);
+            font-weight: 600;
+            display: none;
+        }
+        .drop-zone.selected .drop-zone-filename { display: block; }
+        .drop-zone.selected .drop-zone-text { display: none; }
+
+        /* Select */
+        .styled-select {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394a3b8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+        }
+
+        .styled-select:hover, .styled-select:focus {
+            border-color: var(--accent-1);
+            outline: none;
+            background-color: rgba(124,58,237,0.07);
+        }
+
+        .styled-select option { background: #1e1e3f; color: var(--text-primary); }
+
+        /* Submit button */
+        .btn-submit {
+            width: 100%;
+            padding: 18px 32px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 0.96rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .btn-submit::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: rgba(255,255,255,0);
+            transition: var(--transition);
+        }
+        .btn-submit:hover::before { background: rgba(255,255,255,0.08); }
+        .btn-submit:active { transform: scale(0.985); }
+
+        .btn-img {
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            color: white;
+            box-shadow: 0 8px 32px rgba(124,58,237,0.4);
+        }
+        .btn-img:hover { box-shadow: 0 12px 40px rgba(124,58,237,0.55); transform: translateY(-2px); }
+
+        .btn-audio {
+            background: linear-gradient(135deg, var(--accent-audio), var(--accent-audio2));
+            color: white;
+            box-shadow: 0 8px 32px rgba(14,165,233,0.4);
+        }
+        .btn-audio:hover { box-shadow: 0 12px 40px rgba(14,165,233,0.55); transform: translateY(-2px); }
+
+        /* Spinner */
+        .btn-submit .spinner {
+            display: none;
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ================================================================
+           INFO BANNER
+        ================================================================ */
+        .info-banner {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 20px;
+            background: rgba(14,165,233,0.1);
+            border: 1px solid rgba(14,165,233,0.2);
+            border-radius: var(--radius-sm);
+            margin-bottom: 28px;
+            font-size: 0.85rem;
+            color: #7dd3fc;
+        }
+
+        /* ================================================================
+           ERROR BANNER
+        ================================================================ */
+        .error-banner {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 20px;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: var(--radius-sm);
+            margin-bottom: 28px;
+            font-size: 0.88rem;
+            color: #fca5a5;
+        }
+
+        /* ================================================================
+           METHOD BADGE
+        ================================================================ */
+        .method-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px;
+            background: rgba(124,58,237,0.15);
+            border: 1px solid rgba(124,58,237,0.3);
+            border-radius: 100px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 28px;
+        }
+
+        /* ================================================================
+           IMAGE RESULTS GRID
+        ================================================================ */
+        .img-results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+        }
+
+        .img-result-card {
+            background: var(--bg-card-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+        }
+        .img-result-card:hover {
+            border-color: rgba(124,58,237,0.4);
+            transform: translateY(-3px);
+        }
+
+        .img-result-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 14px;
+        }
+
+        .img-result-card img {
+            width: 100%; height: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            display: block;
+            transition: transform var(--transition);
+        }
+        .img-result-card img:hover { transform: scale(1.04); }
+
+        /* ================================================================
+           AUDIO RESULTS — 3-column comparison
+        ================================================================ */
+        .audio-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media(max-width: 900px) { .audio-grid { grid-template-columns: 1fr; } }
+
+        .audio-card {
+            background: rgba(14,165,233,0.05);
+            border: 1px solid rgba(14,165,233,0.15);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: var(--transition);
+        }
+        .audio-card:hover {
+            border-color: rgba(14,165,233,0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(14,165,233,0.1);
+        }
+
+        .audio-card-header {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .bit-badge {
+            display: inline-flex; align-items: center;
+            padding: 5px 14px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .bit-1  { background: rgba(16,185,129,0.15);  color: #6ee7b7; border:1px solid rgba(16,185,129,0.3); }
+        .bit-4  { background: rgba(14,165,233,0.15);  color: #7dd3fc; border:1px solid rgba(14,165,233,0.3); }
+        .bit-7  { background: rgba(245,158,11,0.15);  color: #fcd34d; border:1px solid rgba(245,158,11,0.3); }
+
+        .audio-card img {
+            width: 100%; height: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .audio-metrics {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+
+        .metric-chip {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .metric-chip-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-subtle);
+            margin-bottom: 4px;
+        }
+        .metric-chip-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .audio-size {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* ================================================================
+           METRICS TABLE
+        ================================================================ */
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .metrics-table th {
+            padding: 14px 20px;
+            background: rgba(255,255,255,0.04);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .metrics-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .metrics-table tr:last-child td { border-bottom: none; }
+
+        .metrics-table tr:hover td { background: rgba(255,255,255,0.025); }
+
+        .val-highlight {
+            font-weight: 700;
+            color: #a78bfa;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ================================================================
+           DOWNLOAD BUTTON
+        ================================================================ */
+        .btn-download {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 18px;
+            background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: var(--radius-sm);
+            color: #6ee7b7;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            width: 100%;
+            justify-content: center;
+        }
+        .btn-download:hover {
+            background: rgba(16,185,129,0.22);
+            border-color: rgba(16,185,129,0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-download-audio {
+            background: rgba(14,165,233,0.12);
+            border-color: rgba(14,165,233,0.3);
+            color: #7dd3fc;
+        }
+        .btn-download-audio:hover {
+            background: rgba(14,165,233,0.22);
+            border-color: rgba(14,165,233,0.5);
+        }
+
+        /* ================================================================
+           SECTION DIVIDER
+        ================================================================ */
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border), transparent);
+            margin: 32px 0;
+        }
+
+        /* ================================================================
+           FOOTER
+        ================================================================ */
+        footer {
+            text-align: center;
+            padding: 40px 0 0;
+            color: var(--text-subtle);
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+        footer span { color: var(--text-muted); }
+
+        /* ================================================================
+           ANIMATIONS
+        ================================================================ */
+        @keyframes fadeDown {
+            from { opacity:0; transform:translateY(-20px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(20px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* ================================================================
+           LOADING OVERLAY
+        ================================================================ */
+        .loading-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 999;
+            background: rgba(10,10,26,0.85);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .loading-overlay.active { display: flex; }
+
+        .loading-ring {
+            width: 64px; height: 64px;
+            border: 3px solid rgba(124,58,237,0.2);
+            border-top-color: var(--accent-1);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* ================================================================
+           RESPONSIVE
+        ================================================================ */
+        @media(max-width: 768px) {
+            .card { padding: 24px 20px; }
+            .hero { padding: 40px 0 36px; }
+            .tab-nav { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-ring"></div>
+    <p class="loading-text" id="loadingText">Processing… please wait</p>
+</div>
+
+<div class="page-wrap">
+
+    <!-- ======================================================
+         HERO
+    ====================================================== -->
+    <header class="hero">
+        <div class="hero-badge">🔐 B.Tech Final Year Project</div>
+        <h1>LSB Watermarking Studio</h1>
+        <p>Embed invisible watermarks using Least Significant Bit steganography — for images and audio files.</p>
+    </header>
+
+    <!-- ======================================================
+         ERROR
+    ====================================================== -->
+    {% if error %}
+    <div class="error-banner">
+        <span>⚠️</span>
+        <span>{{ error }}</span>
+    </div>
+    {% endif %}
+
+    <!-- ======================================================
+         TAB NAV
+    ====================================================== -->
+    <nav class="tab-nav" role="tablist">
+        <button
+            id="tab-img-btn"
+            class="tab-btn {% if active_tab == 'image' %}active-img{% endif %}"
+            onclick="switchTab('image')"
+            role="tab"
+            aria-selected="{{ 'true' if active_tab == 'image' else 'false' }}"
+            aria-controls="panel-image">
+            <span class="tab-icon">🖼️</span> Image Watermarking
+        </button>
+        <button
+            id="tab-audio-btn"
+            class="tab-btn {% if active_tab == 'audio' %}active-audio{% endif %}"
+            onclick="switchTab('audio')"
+            role="tab"
+            aria-selected="{{ 'true' if active_tab == 'audio' else 'false' }}"
+            aria-controls="panel-audio">
+            <span class="tab-icon">🎵</span> Audio Watermarking
+        </button>
+    </nav>
+
+    <!-- ======================================================
+         TAB: IMAGE WATERMARKING
+    ====================================================== -->
+    <div id="panel-image" class="tab-panel {% if active_tab == 'image' %}visible{% endif %}" role="tabpanel">
+
+        <!-- Upload card -->
+        <div class="card">
+            <h2 class="card-title">
+                <span class="card-title-icon icon-purple">🖼️</span>
+                Upload Images
+            </h2>
+
+            <form id="imgForm" action="/process" method="post" enctype="multipart/form-data">
+                <div class="form-grid">
+                    <!-- Cover image -->
+                    <div class="form-group">
+                        <label class="form-label" for="cover">Cover Image</label>
+                        <div class="drop-zone" id="coverZone">
+                            <input type="file" name="cover" id="cover" accept="image/*" required
+                                   onchange="onFileSelected(this, 'coverZone')">
+                            <span class="drop-zone-icon">🗂️</span>
+                            <div class="drop-zone-text">
+                                <strong>Choose or drag cover image</strong>
+                                PNG, JPG, BMP supported
+                            </div>
+                            <div class="drop-zone-filename" id="coverFilename"></div>
+                        </div>
+                    </div>
+
+                    <!-- Watermark image -->
+                    <div class="form-group">
+                        <label class="form-label" for="watermark">Watermark Image</label>
+                        <div class="drop-zone" id="watermarkZone">
+                            <input type="file" name="watermark" id="watermark" accept="image/*" required
+                                   onchange="onFileSelected(this, 'watermarkZone')">
+                            <span class="drop-zone-icon">💧</span>
+                            <div class="drop-zone-text">
+                                <strong>Choose or drag watermark image</strong>
+                                Will be resized to match cover
+                            </div>
+                            <div class="drop-zone-filename" id="watermarkFilename"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:20px;">
+                    <label class="form-label" for="lsb_method">LSB Method</label>
+                    <select name="lsb_method" id="lsb_method" class="styled-select">
+                        <option value="4bit" {% if request %}{% endif %}>4-bit LSB — Higher Capacity, Slight Visibility</option>
+                        <option value="1bit">1-bit LSB per RGB Channel — More Imperceptible</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit btn-img" id="imgSubmitBtn"
+                        onclick="startLoading('imgSubmitBtn', 'Embedding watermark…')">
+                    🚀 &nbsp;Embed &amp; Extract Watermark
+                </button>
+            </form>
+        </div>
+
+        <!-- Results -->
+        {% if result %}
+        <div class="card" style="animation: fadeUp 0.5s ease both;">
+            <h2 class="card-title">
+                <span class="card-title-icon icon-green">✅</span>
+                Processing Results
+            </h2>
+
+            <div class="method-badge">⚙️ &nbsp;{{ result.method }}</div>
+
+            <div class="img-results-grid">
+                <div class="img-result-card">
+                    <div class="img-result-label">🔒 Watermarked Image</div>
+                    <img src="/{{ result.watermarked }}" alt="Watermarked">
+                    <a href="/{{ result.watermarked }}" download="watermarked.png" class="btn-download" style="margin-top:12px;">
+                        ⬇️ &nbsp;Download
+                    </a>
+                </div>
+                <div class="img-result-card">
+                    <div class="img-result-label">🔓 Extracted (from Cover)</div>
+                    <img src="/{{ result.extracted_cover }}" alt="Extracted from Cover">
+                    <a href="/{{ result.extracted_cover }}" download="extracted_cover.png" class="btn-download" style="margin-top:12px;">
+                        ⬇️ &nbsp;Download
+                    </a>
+                </div>
+                <div class="img-result-card">
+                    <div class="img-result-label">🔓 Extracted (from Watermarked)</div>
+                    <img src="/{{ result.extracted_watermarked }}" alt="Extracted from Watermarked">
+                    <a href="/{{ result.extracted_watermarked }}" download="extracted_watermarked.png" class="btn-download" style="margin-top:12px;">
+                        ⬇️ &nbsp;Download
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quality Metrics -->
+        <div class="card" style="animation: fadeUp 0.5s 0.1s ease both;">
+            <h2 class="card-title">
+                <span class="card-title-icon icon-purple">📊</span>
+                Quality Analysis
+            </h2>
+            <div style="overflow-x:auto;">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Comparison</th>
+                            <th>MSE ↓</th>
+                            <th>PSNR ↑ (dB)</th>
+                            <th>Quality</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Extracted (Watermarked) vs Watermarked Image</td>
+                            <td class="val-highlight">{{ result.mse1 }}</td>
+                            <td class="val-highlight">{{ result.psnr1 }}</td>
+                            <td>{{ '🟢 Excellent' if result.psnr1 > 40 else ('🟡 Good' if result.psnr1 > 30 else '🔴 Poor') }}</td>
+                        </tr>
+                        <tr>
+                            <td>Extracted (Cover) vs Original Cover</td>
+                            <td class="val-highlight">{{ result.mse2 }}</td>
+                            <td class="val-highlight">{{ result.psnr2 }}</td>
+                            <td>{{ '🟢 Excellent' if result.psnr2 > 40 else ('🟡 Good' if result.psnr2 > 30 else '🔴 Poor') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+    </div><!-- /panel-image -->
+
+    <!-- ======================================================
+         TAB: AUDIO WATERMARKING
+    ====================================================== -->
+    <div id="panel-audio" class="tab-panel {% if active_tab == 'audio' %}visible{% endif %}" role="tabpanel">
+
+        <!-- Upload card -->
+        <div class="card">
+            <h2 class="card-title">
+                <span class="card-title-icon icon-blue">🎵</span>
+                Upload Audio &amp; Image
+            </h2>
+
+            <div class="info-banner">
+                ℹ️ The system automatically runs <strong>&nbsp;1-bit, 4-bit and 7-bit&nbsp;</strong> LSB embedding and shows a side-by-side comparison of all three.
+            </div>
+
+            <form id="audioForm" action="/process-audio" method="post" enctype="multipart/form-data">
+                <div class="form-grid">
+                    <!-- WAV audio -->
+                    <div class="form-group">
+                        <label class="form-label" for="audio">Cover Audio (WAV)</label>
+                        <div class="drop-zone" id="audioZone">
+                            <input type="file" name="audio" id="audio" accept=".wav" required
+                                   onchange="onFileSelected(this, 'audioZone')">
+                            <span class="drop-zone-icon">🎵</span>
+                            <div class="drop-zone-text">
+                                <strong>Choose or drag WAV file</strong>
+                                Only .wav format supported
+                            </div>
+                            <div class="drop-zone-filename" id="audioFilename"></div>
+                        </div>
+                    </div>
+
+                    <!-- Watermark image -->
+                    <div class="form-group">
+                        <label class="form-label" for="watermark_image">Watermark Image</label>
+                        <div class="drop-zone" id="wmImgZone">
+                            <input type="file" name="watermark_image" id="watermark_image" accept="image/*" required
+                                   onchange="onFileSelected(this, 'wmImgZone')">
+                            <span class="drop-zone-icon">🖼️</span>
+                            <div class="drop-zone-text">
+                                <strong>Choose or drag image</strong>
+                                Will be resized to fit audio capacity
+                            </div>
+                            <div class="drop-zone-filename" id="wmImgFilename"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit btn-audio" id="audioSubmitBtn"
+                        onclick="startLoading('audioSubmitBtn', 'Embedding image into audio… this may take a moment')">
+                    🎶 &nbsp;Embed Image into Audio (All 3 Depths)
+                </button>
+            </form>
+        </div>
+
+        <!-- Audio Results -->
+        {% if audio_results %}
+        <div class="card" style="animation: fadeUp 0.5s ease both;">
+            <h2 class="card-title">
+                <span class="card-title-icon icon-blue">📈</span>
+                Audio Watermarking Results
+            </h2>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:24px; line-height:1.6;">
+                Each column shows the result of embedding at a different bit depth. Higher bit-depth = more capacity but slightly lower audio fidelity (lower PSNR).
+            </p>
+
+            <div class="audio-grid">
+                {% for r in audio_results %}
+                <div class="audio-card">
+                    <!-- Header -->
+                    <div class="audio-card-header">
+                        <span class="bit-badge bit-{{ r.bits }}">{{ r.bits }}-Bit LSB</span>
+                        <span class="audio-size">{{ r.image_size }} px</span>
+                    </div>
+
+                    <!-- Extracted image preview -->
+                    <div>
+                        <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; color:var(--text-subtle); margin-bottom:8px;">Extracted Image</div>
+                        <img src="/{{ r.extracted_image }}" alt="Extracted at {{ r.bits }}-bit">
+                    </div>
+
+                    <!-- Metrics -->
+                    <div class="audio-metrics">
+                        <div class="metric-chip">
+                            <div class="metric-chip-label">MSE</div>
+                            <div class="metric-chip-value">{{ r.mse }}</div>
+                        </div>
+                        <div class="metric-chip">
+                            <div class="metric-chip-label">PSNR (dB)</div>
+                            <div class="metric-chip-value">{{ r.psnr }}</div>
+                        </div>
+                        <div class="metric-chip" style="grid-column:1/-1;">
+                            <div class="metric-chip-label">Bits Embedded</div>
+                            <div class="metric-chip-value" style="font-size:0.85rem;">{{ "{:,}".format(r.bits_embedded) }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Downloads -->
+                    <a href="/{{ r.audio_path }}" download="{{ r.audio_filename }}" class="btn-download btn-download-audio">
+                        ⬇️ &nbsp;Download Watermarked WAV
+                    </a>
+                    <a href="/{{ r.extracted_image }}" download="extracted_{{ r.bits }}bit.png" class="btn-download">
+                        ⬇️ &nbsp;Download Extracted Image
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Comparison table -->
+            <div class="section-divider"></div>
+            <h3 style="font-size:1rem; font-weight:700; color:var(--text-muted); margin-bottom:16px; text-transform:uppercase; letter-spacing:0.6px;">📊 Bit-Depth Comparison</h3>
+            <div style="overflow-x:auto;">
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Bit Depth</th>
+                            <th>MSE ↓</th>
+                            <th>PSNR ↑ (dB)</th>
+                            <th>Bits Embedded</th>
+                            <th>Capacity</th>
+                            <th>Fidelity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in audio_results %}
+                        <tr>
+                            <td><strong>{{ r.bits }}-bit LSB</strong></td>
+                            <td class="val-highlight">{{ r.mse }}</td>
+                            <td class="val-highlight">{{ r.psnr }}</td>
+                            <td>{{ "{:,}".format(r.bits_embedded) }}</td>
+                            <td>{{ "{:,}".format(r.capacity) }}</td>
+                            <td>{{ '🟢 High' if r.psnr > 50 else ('🟡 Medium' if r.psnr > 35 else '🔴 Low') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+    </div><!-- /panel-audio -->
+
+    <!-- ======================================================
+         FOOTER
+    ====================================================== -->
+    <footer>
+        <p>✨ <span>LSB Watermarking Studio</span> &nbsp;•&nbsp; B.Tech Final Year Project</p>
+        <p style="margin-top:6px;">Built with Flask &amp; Python &nbsp;|&nbsp; Techniques: 1-bit, 4-bit, 7-bit LSB Steganography</p>
+    </footer>
+
+</div><!-- /page-wrap -->
+
+<script>
+    // ─── Tab switching ──────────────────────────────────────────────────────
+    function switchTab(tab) {
+        const panels = ['image','audio'];
+        panels.forEach(t => {
+            document.getElementById('panel-' + t).classList.toggle('visible', t === tab);
+        });
+        document.getElementById('tab-img-btn').className =
+            'tab-btn' + (tab === 'image' ? ' active-img' : '');
+        document.getElementById('tab-audio-btn').className =
+            'tab-btn' + (tab === 'audio' ? ' active-audio' : '');
+    }
+
+    // ─── File input + drop zone ─────────────────────────────────────────────
+    function onFileSelected(input, zoneId) {
+        const zone = document.getElementById(zoneId);
+        if (input.files && input.files[0]) {
+            const name = input.files[0].name;
+            zone.classList.add('selected');
+            const fnEl = zone.querySelector('.drop-zone-filename');
+            if (fnEl) { fnEl.textContent = '✓  ' + name; }
+        }
+    }
+
+    // Drag-and-drop visual feedback
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+        zone.addEventListener('dragleave',   () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+            const input = zone.querySelector('input[type="file"]');
+            if (input && e.dataTransfer.files.length) {
+                input.files = e.dataTransfer.files;
+                onFileSelected(input, zone.id);
+            }
+        });
+    });
+
+    // ─── Loading overlay ────────────────────────────────────────────────────
+    function startLoading(btnId, msg) {
+        document.getElementById('loadingText').textContent = msg || 'Processing…';
+        document.getElementById('loadingOverlay').classList.add('active');
+    }
+
+    // Hide overlay if page re-loads with result (back navigation etc.)
+    window.addEventListener('pageshow', () => {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    });
+
+    // ─── Auto-scroll to results if present ─────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        const hasResults = document.querySelector('.img-results-grid, .audio-grid');
+        if (hasResults) {
+            setTimeout(() => hasResults.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+        }
+    });
+</script>
+
+</body>
+</html>
